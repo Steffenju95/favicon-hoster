@@ -1,47 +1,65 @@
+# Name des Workflows, der in der GitHub Actions UI angezeigt wird
 name: Generate Favicon Pages
 
-# Trigger: Aktion ausführen, wenn Änderungen an icons.txt gepusht werden
+# Trigger: Wann soll dieser Workflow ausgeführt werden?
 on:
   push:
+    # Nur bei Push-Ereignissen auf dem Hauptbranch (passen Sie ggf. den Namen an)
     branches:
-      - main  # oder master, je nachdem, wie Ihr Hauptbranch heißt
+      - main 
+    # Und nur, wenn sich die Datei 'icons.txt' geändert hat
     paths:
-      - 'icons.txt' # Nur ausführen, wenn sich diese Datei ändert
+      - 'icons.txt'
 
+# Definition der Jobs, die ausgeführt werden sollen
 jobs:
+  # Ein Job namens 'build_and_deploy'
   build_and_deploy:
-    runs-on: ubuntu-latest # Betriebssystem für die Ausführung
-    # Wichtig: Dem Job erlauben, ins Repository zurückzuschreiben
+    # Auf welchem Betriebssystem soll der Job laufen?
+    runs-on: ubuntu-latest
+    
+    # Berechtigungen, die der Job benötigt
     permissions:
+      # Erforderlich, um Änderungen zurück ins Repository zu pushen
       contents: write 
+      
+    # Die einzelnen Schritte, die der Job ausführt
     steps:
+      # Schritt 1: Code des Repositories herunterladen
       - name: Checkout Repository Code
-        uses: actions/checkout@v4 # Lädt den Code des Repositories herunter
+        uses: actions/checkout@v4 # Verwendet eine Standard-GitHub-Action
 
+      # Schritt 2: Python-Umgebung einrichten
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5 # Verwendet eine Standard-GitHub-Action
         with:
-          python-version: '3.x' # Verwendet eine aktuelle Python 3 Version
+          python-version: '3.x' # Stellt sicher, dass Python 3 verfügbar ist
 
-      - name="Generate Pages" # Schritt zum Ausführen des Python-Skripts
-        id: generate # Gibt diesem Schritt eine ID, um auf dessen Output zuzugreifen
-        run: python generate_pages.py
+      # Schritt 3: Python-Skript zur Seitengenerierung ausführen
+      - name: Generate Pages 
+        id: generate # Gibt diesem Schritt eine ID (optional, hier nicht direkt verwendet)
+        run: python generate_pages.py # Führt Ihr Python-Skript aus
 
-      - name: Commit and Push new pages # Nur ausführen, wenn neue Seiten erstellt wurden
-        # if: steps.generate.outputs.new_pages_count > 0 # Prüft den Output vom Python-Skript (funktioniert oft nicht zuverlässig ohne Umwege)
-        # Alternative: Prüfen ob Git Änderungen findet
+      # Schritt 4: Neue oder geänderte Seiten committen und pushen
+      - name: Commit and Push new pages 
         run: |
+          # Git konfigurieren (notwendig für den Commit im Namen des Actions Bot)
           git config --global user.name 'GitHub Actions Bot'
-          git config --global user.email 'actions@github.com'
-          # Hinzufügen ALLER neuen oder geänderten .html Dateien im Root Verzeichnis
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Alle .html-Dateien im Hauptverzeichnis zum Staging hinzufügen
+          # (Geht davon aus, dass generate_pages.py die Dateien dort erstellt)
           git add *.html 
-          # Prüfen, ob es etwas zum Committen gibt
-          # git diff --staged --quiet || git commit -m "Generate new favicon pages"
-          # Sicherere Variante: Commit nur wenn es Änderungen gibt und Push nur wenn Commit erfolgreich war
+          
+          # Prüfen, ob es tatsächlich Änderungen zum Committen gibt
+          # 'git diff --staged --quiet' gibt Exit-Code 0 zurück, WENN es KEINE Änderungen gibt.
+          # Das '!' kehrt das um, d.h. der Code im 'if' läuft nur, WENN es Änderungen gibt.
           if ! git diff --staged --quiet; then
-            git commit -m "Generate new favicon pages"
-            git push
+            echo "Änderungen gefunden, erstelle Commit..."
+            git commit -m "Generate or update favicon pages" # Commit-Nachricht
+            echo "Pushe Änderungen..."
+            git push # Pusht die Änderungen zurück ins Repository
           else
-            echo "Keine neuen Seiten zum Committen."
+            # Keine Änderungen gefunden, nichts zu tun
+            echo "Keine neuen oder geänderten HTML-Seiten zum Committen."
           fi
-        # Fehler ignorieren, falls kein Push nötig ist? Eher nicht, der 'if' sollte das abfangen.
