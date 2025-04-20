@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamischer Favicon Hoster</title>
+    
+    <script>
+        function setFavicon() {
+            // 1. Parameter aus der URL lesen
+            const urlParams = new URLSearchParams(window.location.search);
+            const iconUrl = urlParams.get('icon'); // Sucht nach dem Parameter "?icon=..."
+
+            if (iconUrl) {
+                try {
+                    // Versuchen, die übergebene URL zu validieren (optional, aber sicherer)
+                    const validatedUrl = new URL(iconUrl);
+
+                    // 2. Favicon-Link im <head> suchen oder erstellen
+                    let link = document.querySelector("link[rel~='icon']");
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.rel = 'icon';
+                        // Wichtig: Das Element zum <head> hinzufügen, *bevor* Attribute gesetzt werden
+                        document.head.appendChild(link); 
+                    }
+                    
+                    // 3. Den href des Favicon-Links setzen
+                    link.href = validatedUrl.toString(); // toString() um sicherzugehen
+
+                    // Optional: Versuchen, den Typ aus der URL abzuleiten oder einen Standard setzen
+                    if (validatedUrl.pathname.endsWith('.png')) {
+                        link.type = 'image/png';
+                    } else if (validatedUrl.pathname.endsWith('.ico')) {
+                        link.type = 'image/x-icon';
+                    } else if (validatedUrl.pathname.endsWith('.svg')) {
+                        link.type = 'image/svg+xml';
+                    } else if (validatedUrl.pathname.endsWith('.jpg') || validatedUrl.pathname.endsWith('.jpeg')) {
+                        link.type = 'image/jpeg';
+                    } else {
+                        // Standard oder leer lassen, damit der Browser es versucht
+                        link.type = ''; 
+                    }
+                    
+                    console.log('Favicon gesetzt auf:', validatedUrl.toString());
+
+                } catch (e) {
+                    console.error('Ungültige Icon-URL im Parameter:', iconUrl, e);
+                    // Hier könnte man ein Standard-Favicon setzen
+                }
+            } else {
+                console.log('Kein "icon"-Parameter in der URL gefunden.');
+                // Hier könnte man ein Standard-Favicon setzen
+            }
+        }
+
+        // Das Skript ausführen, sobald das DOM bereit ist
+        // (Sicherer als es direkt im <head> auszuführen)
+        document.addEventListener('DOMContentLoaded', setFavicon);
+    </script>
+</head>
+<body>
+    <h1>Dynamischer Favicon Hoster</h1>
+    <p>Diese Seite setzt das Favicon basierend auf dem 'icon'-Parameter in der URL.</p>
+    <p>Beispiel: <code>...?icon=https://www.google.com/favicon.ico</code></p>
+</body>
+</html>
