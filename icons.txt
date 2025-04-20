@@ -1,0 +1,3 @@
+https://www.google.com/favicon.ico
+https://github.githubassets.com/favicons/favicon.svg
+https://static.djangoproject.com/img/icon-touch.e4872c4da341.png
