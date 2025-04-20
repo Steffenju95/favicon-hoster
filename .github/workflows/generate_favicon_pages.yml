@@ -1,0 +1,47 @@
+name: Generate Favicon Pages
+
+# Trigger: Aktion ausführen, wenn Änderungen an icons.txt gepusht werden
+on:
+  push:
+    branches:
+      - main  # oder master, je nachdem, wie Ihr Hauptbranch heißt
+    paths:
+      - 'icons.txt' # Nur ausführen, wenn sich diese Datei ändert
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest # Betriebssystem für die Ausführung
+    # Wichtig: Dem Job erlauben, ins Repository zurückzuschreiben
+    permissions:
+      contents: write 
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4 # Lädt den Code des Repositories herunter
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Verwendet eine aktuelle Python 3 Version
+
+      - name="Generate Pages" # Schritt zum Ausführen des Python-Skripts
+        id: generate # Gibt diesem Schritt eine ID, um auf dessen Output zuzugreifen
+        run: python generate_pages.py
+
+      - name: Commit and Push new pages # Nur ausführen, wenn neue Seiten erstellt wurden
+        # if: steps.generate.outputs.new_pages_count > 0 # Prüft den Output vom Python-Skript (funktioniert oft nicht zuverlässig ohne Umwege)
+        # Alternative: Prüfen ob Git Änderungen findet
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          # Hinzufügen ALLER neuen oder geänderten .html Dateien im Root Verzeichnis
+          git add *.html 
+          # Prüfen, ob es etwas zum Committen gibt
+          # git diff --staged --quiet || git commit -m "Generate new favicon pages"
+          # Sicherere Variante: Commit nur wenn es Änderungen gibt und Push nur wenn Commit erfolgreich war
+          if ! git diff --staged --quiet; then
+            git commit -m "Generate new favicon pages"
+            git push
+          else
+            echo "Keine neuen Seiten zum Committen."
+          fi
+        # Fehler ignorieren, falls kein Push nötig ist? Eher nicht, der 'if' sollte das abfangen.
